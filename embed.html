@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- No frame-ancestors: this page exists to be framed. Everything else is as
+       tight as the app's, and connect-src carries convex.cloud for ?stackrank=. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://*.convex.cloud; worker-src 'self' blob:">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <title>Portent</title>
+  <!-- An embed is a component, so it is not a search result: the app page is. -->
+  <meta name="robots" content="noindex, follow">
+  <link rel="stylesheet" href="css/embed.css">
+</head>
+<body>
+  <div class="frame">
+    <p class="frame__question" id="question" hidden></p>
+
+    <div class="stage" id="stage">
+      <div class="stage__ball" id="ballHost"></div>
+      <div class="flat-ball" id="flatBall" aria-hidden="true">
+        <span class="flat-ball__eight">8</span>
+        <span class="flat-ball__window" id="fallbackWindow"></span>
+      </div>
+    </div>
+
+    <p class="frame__answer" id="answer" role="status" aria-live="polite" aria-atomic="true"></p>
+
+    <div class="frame__controls" id="controls">
+      <button type="button" class="ebtn ebtn--primary" id="shakeBtn">Shake it</button>
+      <button type="button" class="ebtn" id="flipBtn" hidden>Turn it over</button>
+      <a class="frame__link" href="https://portent.neorgon.com/" target="_blank" rel="noopener">Portent</a>
+    </div>
+  </div>
+
+  <script type="module" src="js/embed.js"></script>
+</body>
+</html>

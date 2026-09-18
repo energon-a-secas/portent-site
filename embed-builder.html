@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'none'; script-src 'self' 'unsafe-inline' https://gc.zgo.at https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.neorgon.org; font-src 'self'; img-src 'self' data: blob: https://cdn.neorgon.org https://neorgon.goatcounter.com; connect-src 'self' https://*.convex.cloud https://neorgon.goatcounter.com https://cloudflareinsights.com; frame-src 'self'; worker-src 'self' blob:">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="neo-mark" content="on">
+  <title>Portent | Embed builder</title>
+  <meta name="description" content="Build an iframe snippet for the Portent ball: pick the deck, the question and the controls, watch the live preview, and read the answers it sends back">
+  <link rel="canonical" href="https://portent.neorgon.com/embed-builder.html">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#040714">
+  <link rel="stylesheet" href="https://cdn.neorgon.org/v1.0.0/styles/base.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script>(function(){var m=location.search.match(/[?&]theme=([\w-]+)/)||document.cookie.match(/(?:^|;\s*)neo_theme=([\w-]+)/);if(m&&m[1]!=='default')document.documentElement.dataset.theme=decodeURIComponent(m[1]);})();</script>
+  <link rel="stylesheet" href="css/neorgon-header.css">
+  <link rel="stylesheet" href="css/neorgon-themes.css">
+  <link rel="stylesheet" href="https://cdn.neorgon.org/v1.0.0/header/season.css">
+  <script defer src="js/neorgon-header.js"></script>
+  <meta name="neo-repo" content="energon-a-secas/portent-site">
+  <link rel="stylesheet" href="css/neorgon-footer.css">
+  <script defer src="js/neorgon-footer.js"></script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="header-bar" data-header-mode="content">
+    <div class="header-logo">
+      <a href="./" class="header-title-link">
+        <img src="energon-classic-logo.png" class="header-logo-img" alt="">
+        <div class="header-title-wrap">
+          <h1>Portent</h1>
+          <div class="header-subtitle">Embed builder</div>
+        </div>
+      </a>
+    </div>
+    <div class="header-right">
+      <div class="header-actions">
+        <a class="btn btn--ghost btn--sm" href="./" data-keep-mobile>Back to the ball</a>
+      </div>
+      <a class="header-home" href="https://neorgon.com/" title="neorgon.com" aria-label="Neorgon home">
+        <svg class="nh-hub-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 4.4 18.58 8.2 18.58 15.8 12 19.6 5.42 15.8 5.42 8.2Z" fill="currentColor" stroke="none"/>
+          <g class="nh-orbit">
+            <path d="M2.47 17.50 A11.0 11.0 0 0 1 14.85 1.37" fill="none" stroke="currentColor" stroke-width="1.05" stroke-linecap="round"/>
+            <path d="M21.53 6.50 A11.0 11.0 0 0 1 9.15 22.63" fill="none" stroke="currentColor" stroke-width="1.05" stroke-linecap="round"/>
+            <circle cx="21.71" cy="6.84" r="1.25" fill="currentColor"/>
+            <circle cx="2.29" cy="17.16" r="1.25" fill="currentColor"/>
+          </g>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="container stack">
+      <section class="section">
+        <div class="section__titles">
+          <h2 class="section__title">Put the ball in your own page</h2>
+          <p class="section__lead">
+            The embed is one iframe with no build step. Set it up here, copy the
+            snippet, and it works anywhere. This page is also the working example:
+            the panel on the right talks to the preview over postMessage and shows
+            everything the ball sends back.
+          </p>
+        </div>
+
+        <div class="builder">
+          <div class="builder__col">
+            <h3 class="deck-col__title">The deck</h3>
+            <div class="field">
+              <span class="field__label">Answers</span>
+              <div class="field__row">
+                <select id="deckMode">
+                  <option value="classic" selected>The classic twenty</option>
+                  <option value="stored">The deck saved in this browser</option>
+                  <option value="stackrank">A Stack Rank list</option>
+                  <option value="text">Answers I type here</option>
+                </select>
+              </div>
+            </div>
+
+            <label class="field" id="stackrankField" hidden>
+              <span class="field__label">Stack Rank list or share link</span>
+              <input type="text" id="stackrankInput" autocomplete="off" placeholder="Paste a stackrank.neorgon.com link">
+            </label>
+
+            <label class="field" id="textField" hidden>
+              <span class="field__label">One answer per line</span>
+              <textarea id="deckText" rows="6" placeholder="+ Ship it&#10;~ Ask again after lunch&#10;- Absolutely not"></textarea>
+            </label>
+
+            <h3 class="deck-col__title">The frame</h3>
+            <label class="field">
+              <span class="field__label">Question shown above the ball</span>
+              <input type="text" id="questionInput" maxlength="160" autocomplete="off" placeholder="Leave empty for none">
+            </label>
+            <label class="field">
+              <span class="field__label">Background</span>
+              <div class="field__row">
+                <input type="text" id="bgInput" autocomplete="off" placeholder="transparent, or a hex like 0b0b12">
+              </div>
+            </label>
+            <div class="field">
+              <span class="field__label">Behaviour</span>
+              <label class="check"><input type="checkbox" id="controlsInput" checked> Show the Shake button</label>
+              <label class="check"><input type="checkbox" id="autoInput"> Shake once when it loads</label>
+            </div>
+
+            <h3 class="deck-col__title">The snippet</h3>
+            <textarea id="snippet" rows="5" readonly aria-label="The iframe snippet"></textarea>
+            <div class="field__row">
+              <button type="button" class="btn btn--primary btn--sm" id="copyBtn">Copy the snippet</button>
+              <a class="btn btn--ghost btn--sm" id="openBtn" href="embed.html" target="_blank" rel="noopener">Open the frame on its own</a>
+            </div>
+            <p class="muted">
+              The deck travels inside the URL, so a copied snippet keeps working
+              in a page that has never heard of Portent. A Stack Rank list is
+              fetched by the frame each time it loads, so it stays current.
+            </p>
+          </div>
+
+          <div class="builder__col">
+            <h3 class="deck-col__title">Live preview</h3>
+            <!-- The real embed, framed exactly the way the snippet frames it. -->
+            <iframe id="preview" class="builder__preview" title="Portent preview"
+                    allow="accelerometer; gamepad"></iframe>
+
+            <h3 class="deck-col__title">Drive it from the host page</h3>
+            <p class="muted">
+              This is the reflection: your page posts a message in, the ball
+              answers, and your page reads the answer back out.
+            </p>
+            <div class="field__row">
+              <button type="button" class="btn btn--secondary btn--sm" id="postShake">Post portent:shake</button>
+              <button type="button" class="btn btn--secondary btn--sm" id="postDeck">Post portent:deck</button>
+              <button type="button" class="btn btn--secondary btn--sm" id="postQuestion">Post portent:question</button>
+            </div>
+
+            <h3 class="deck-col__title">What came back</h3>
+            <ul class="log" id="log" aria-live="polite"></ul>
+            <p class="muted">
+              Every message is <code>{ source: 'portent', type, … }</code>. Filter
+              on <code>source</code>, because a page can be framing more than one
+              thing. The full contract is in the header of <code>js/embed.js</code>.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="neo-footer" data-footer-mode="minimal">
+    The embed runs entirely in the visitor's browser. Nothing is sent anywhere except a Stack Rank list you ask it to read.
+  </footer>
+
+  <script type="module" src="js/embed-builder.js"></script>
+</body>
+</html>

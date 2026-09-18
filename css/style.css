@@ -1,0 +1,986 @@
+/* ── Reset & base ──────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/*
+ * ── Design tokens ─────────────────────────────────────────────
+ *
+ * Canonical tokens (colors, font, type scale, spacing, radii) come from the CDN:
+ *   https://cdn.neorgon.org/v1.0.0/styles/base.css   (linked in index.html)
+ * Do NOT redeclare them here: a local copy is how the fleet drifted. The block
+ * below holds only what base.css does not define, plus the per-site accent.
+ *
+ * Motion: base.css still ships --ease-snap (bounce) for legacy sites, but it is
+ * deprecated for new work (impeccable law: ease-out exponential, no bounce).
+ * Use --ease-out below.
+ */
+
+:root {
+  /* Per-site identity: this site's hub card accent (violet-500, one shade
+     lighter for --accent-bright). The only knob declared locally. */
+  --accent: #8b5cf6;
+  --accent-bright: #a78bfa;
+
+  /* Site extras base.css does not define */
+  --surface-toast: #1a1730;
+  --danger: #e11d48;
+  --danger-hover: #f43f5e;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --control-height: 44px;
+  --control-height-sm: 36px;
+  --shadow-card: 0 12px 28px rgba(15, 23, 42, 0.5);
+  --shadow-modal: 0 24px 48px rgba(2, 6, 23, 0.58);
+  --z-sticky-header: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+}
+
+/* Author display values (e.g. .section/.stack flex) would otherwise defeat the
+   hidden attribute, so restore its authority once, globally. */
+[hidden] { display: none !important; }
+
+html { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  min-height: 100%;
+  color: var(--text-primary);
+  display: flex; flex-direction: column;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+main#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+/* ── Layout ────────────────────────────────────────────────── */
+/*
+ * GOTCHA: body { display:flex; flex-direction:column } + margin: 0 auto
+ * on a child collapses its width, so always pair with width: 100%.
+ *
+ * GOTCHA: External images (YouTube ggpht, Gravatar, etc.) may block loading
+ * when the Referer header points to localhost or an unknown origin. Fix:
+ * 1. Add <meta name="referrer" content="no-referrer"> in <head> (global)
+ * 2. Or add referrerpolicy="no-referrer" on each <img> tag
+ */
+.container {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-6);
+  flex: 1;
+}
+
+/* ── Side-rail shell (opt-in) ──────────────────────────────────
+ * A desktop window is far wider than a comfortable line of text, so a single
+ * centred column leaves two large empty gutters and still runs the prose to
+ * 100+ characters. This puts the section nav in the left gutter and narrows
+ * the reading column, without changing .container for sites that do not use it.
+ *
+ *   <div class="shell">
+ *     <nav class="shell__rail" aria-label="Section"> … </nav>
+ *     <div class="shell__main"> … </div>
+ *   </div>
+ *
+ * Below 940px it collapses to one column and the rail becomes a scrollable
+ * row, so the same markup works on a phone with no JavaScript involved. From
+ * 1240px up, the spare width goes to the right margin only, so the reading
+ * column walks onto the page's centre line instead of sitting right of it.
+ */
+.shell {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-6) 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  align-content: start;
+  flex: 1;
+}
+/* A 1fr track is minmax(auto, 1fr): a wide child (a board, a table, a long
+   code line) sets min-content and stretches the column past the viewport. */
+.shell > * { min-width: 0; }
+
+.shell__rail {
+  display: flex;
+  gap: var(--space-1);
+  padding: 4px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.shell__rail::-webkit-scrollbar { display: none; }
+
+@media (min-width: 940px) {
+  .shell {
+    grid-template-columns: 208px minmax(0, 1fr);
+    gap: var(--space-8);
+    padding: var(--space-8) var(--space-8) 80px;
+  }
+  .shell__rail {
+    position: sticky;
+    top: 76px;          /* clears the app-mode header */
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: var(--space-2);
+    overflow: visible;
+    align-self: start;
+  }
+}
+
+/* The rail sits in the left gutter, but with only two tracks it does not stay
+   there: the rail plus its gap add to main's left side and nothing balances
+   them on the right, so main sits half that distance right of the page's centre
+   line (120px at a 208px rail). A column that far off centre reads as a
+   misalignment rather than as a nav beside it.
+   The correction is to stop splitting the spare width between both margins and
+   spend all of it on the right. Main then walks back onto the centre line as the
+   window grows, reaching it at 1240 + 208 + 32 = 1480px, and it costs main no
+   width at any point on the way: the shell widens, main does not move relative
+   to the rail. Below 1240px the shell already fills the viewport, so there is no
+   spare width to spend and any correction would come straight out of the
+   reading column. That trade is not worth making. */
+@media (min-width: 1240px) {
+  .shell {
+    --shell-nudge: calc(208px + var(--space-8));
+    max-width: calc(1240px + var(--shell-nudge));
+    padding-right: clamp(
+      var(--space-8),
+      calc(var(--space-8) + 100vw - 1240px),
+      calc(var(--space-8) + var(--shell-nudge))
+    );
+  }
+}
+
+/* Vertical rhythm: use inside .container or nested regions */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.stack--tight { gap: var(--space-4); }
+/* Major sections need a real break. At 32px a heading sits almost on top of
+   the block above it and the page reads as one undifferentiated column. */
+.stack--loose { gap: 56px; }
+
+/* Page section: title row + body (replaces “card everything” for grouping) */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.section__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.section__titles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.section__title {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+.section__lead {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 64ch;   /* 65-75 characters is the readable measure */
+}
+.section__lead code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.92em;
+  color: var(--text-secondary);
+}
+.stack > .card { margin-bottom: 0; }
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ── Header ────────────────────────────────────────────────────
+ * Owned by the Neorgon Header Kit (css/neorgon-header.css, canonical
+ * source: packages/neorgon-ui/header/). Do NOT style .header-bar,
+ * .header-logo*, .header-title-link, .header-subtitle, .header-right,
+ * .header-actions, or .header-home here. Sign-in UI belongs to the
+ * Auth Kit (css/neorgon-auth.css), so write no .auth-* styles either.
+ */
+nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ── Buttons (canonical) ─────────────────────────────────────
+ * Use .btn + a variant. Alias: .nav-link = toolbar ghost.
+ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  transition:
+    background-color var(--dur),
+    color var(--dur),
+    border-color var(--dur),
+    box-shadow var(--dur),
+    transform var(--dur-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn--sm {
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+}
+.btn--block { width: 100%; }
+.btn--icon {
+  min-width: var(--control-height);
+  padding: 0;
+}
+.btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+.btn--primary:hover { background: var(--accent-bright); }
+.btn--secondary {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.btn--ghost {
+  background: transparent;
+  color: rgba(255,255,255,0.92);
+  border-color: rgba(255,255,255,0.18);
+}
+.btn--ghost:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+.btn--danger {
+  background: var(--danger);
+  color: #fff;
+  border-color: transparent;
+}
+.btn--danger:hover { background: var(--danger-hover); }
+
+/* Toolbar ghost (header nav): same as .btn.btn--ghost.btn--sm */
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: rgba(255,255,255,0.92);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  transition: background-color var(--dur), color var(--dur), border-color var(--dur);
+}
+.nav-link:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+/* ── Sheet (inline panel under header), not a modal ──────────
+ * Use for filters and compact forms. No backdrop; page scrolls.
+ * For blocking overlays use .modal below. Sign-in is neither: the Auth Kit
+ * (packages/neorgon-ui/auth/) owns its own dialog.
+ */
+.sheet {
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border-subtle);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+.sheet.open { max-height: 300px; }
+.sheet__inner {
+  padding: var(--space-6);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* ── Modal (blocking overlay) ──────────────────────────────── */
+.modal[hidden] {
+  display: none !important;
+}
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 4, 12, 0.85);
+  -webkit-backdrop-filter: blur(10px); /* Safari still needs the prefix */
+  backdrop-filter: blur(10px);
+}
+.modal__dialog {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 520px);
+  max-height: min(90vh, 680px);
+  overflow: hidden;
+  background: var(--surface-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+}
+/* For modals holding option grids or editors: narrow dialogs cramp them */
+.modal__dialog--wide {
+  width: min(100%, 760px);
+}
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.modal__header h2 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.modal__body {
+  padding: var(--space-6);
+  overflow: auto;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+.modal__body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9em;
+  color: var(--text-primary);
+}
+.modal__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ── Card ──────────────────────────────────────────────────── */
+/*
+ * GOTCHA: backdrop-filter creates a stacking context, so dropdowns inside
+ * a card can be clipped by a later card's stacking context. Fix by adding
+ * position: relative; z-index: 10 to the card that owns the open dropdown.
+ *
+ * Default: static surface (no hover lift, avoids generic “dashboard demo”).
+ * Use .card--interactive for raised hover + entrance motion.
+ *
+ * GOTCHA: a <button> or <a> used AS a card does not inherit body text color,
+ * buttons default to canvas text (near-black), rendering invisible on the dark
+ * bg. When a card is an interactive element, set color: var(--text-primary)
+ * and font-family: var(--font) explicitly on it.
+ */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+  backdrop-filter: blur(10px);
+  transition: border-color var(--dur), box-shadow var(--dur);
+}
+.card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.45);
+}
+.card--interactive {
+  transition:
+    transform var(--dur) ease-out,
+    box-shadow var(--dur) ease-out,
+    border-color var(--dur);
+  animation: fadeIn 0.35s ease-out both;
+}
+.card--interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card);
+  border-color: var(--border-strong);
+}
+.card--enter {
+  animation: fadeIn 0.35s ease-out both;
+}
+.card--flat:hover {
+  box-shadow: none;
+}
+/* Card with an action row, in an equal-height grid: pin the toolbar to the
+   bottom so buttons align across cards whose text wraps differently. */
+.card--actions {
+  display: flex;
+  flex-direction: column;
+}
+.card--actions > .toolbar:last-child {
+  margin-top: auto;
+}
+
+/* ── Button press feedback ─────────────────────────────────── */
+button:active,
+.btn:active,
+.nav-link:active {
+  transform: scale(0.98);
+  transition-duration: var(--dur-fast);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Skeleton loading ──────────────────────────────────────── */
+@keyframes shimmer { to { background-position: -200% 0; } }
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-1) 25%, var(--surface-2) 50%, var(--surface-1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius);
+}
+
+/* ── Toast ─────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  z-index: var(--z-toast);
+  max-width: min(360px, calc(100vw - var(--space-8)));
+  background: var(--surface-toast);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-card);
+  pointer-events: none;
+  transform: translateY(8px);
+  opacity: 0;
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+.toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Footer ────────────────────────────────────────────────────
+   Owned by the Neorgon Footer Kit (css/neorgon-footer.css).
+   Don't add .neo-footer rules here. Edit packages/neorgon-ui/footer/
+   and re-run sync-footer.sh. */
+
+/* ── Focus styles ──────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+/* ── Skip link ─────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--space-4);
+  z-index: 1000;
+  padding: var(--space-2) var(--space-4);
+  background: var(--accent-bright);
+  color: #000;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  text-decoration: none;
+  transition: top var(--dur);
+}
+.skip-link:focus { top: 0; }
+
+/* ── Reduced motion ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .card--interactive:hover { transform: none; }
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .container { padding: var(--space-4); }
+  .toast {
+    left: var(--space-4);
+    right: var(--space-4);
+    max-width: none;
+  }
+}
+
+/* ══ Portent ══════════════════════════════════════════════════
+ * Everything below is this site's own. The ball itself is drawn by WebGL and
+ * has no CSS at all: what is styled here is the room around it, plus the flat
+ * ball that stands in when a browser gives no 3D context.
+ */
+
+/* ── The play area ─────────────────────────────────────────── */
+/* One column, centred, sized so the ball is the largest thing on the page. The
+   stage takes what is left after the question, the readout and the controls,
+   which is why it is a flex child with min-height:0 rather than a fixed height. */
+.play {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+.ask {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  text-align: center;
+}
+.ask__label {
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ask__field {
+  width: 100%;
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  text-align: center;
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+}
+.ask__field::placeholder { color: var(--text-muted); }
+
+/* ── The stage ─────────────────────────────────────────────── */
+/* The canvas fills it absolutely so a resize never feeds its own size back into
+   the layout: the stage decides, the renderer follows (js/ball3d.js resize()). */
+.stage {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 300px;
+  touch-action: none;             /* the drag is the toy, not a page scroll */
+  cursor: grab;
+  user-select: none;
+}
+.stage.is-grabbed { cursor: grabbing; }
+.stage__ball { position: absolute; inset: 0; }
+.stage__ball canvas, .ball-canvas { display: block; width: 100%; height: 100%; }
+
+/* A violet pool of light under the ball, so it does not float in a void. */
+.stage::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: 46%;
+  height: 8%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--accent) 34%, transparent), transparent 72%);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.stage__fallback,
+.stage__hint,
+.stage__note {
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  max-width: 46ch;
+}
+.stage__hint { color: var(--text-secondary); }
+.stage__fallback { color: var(--text-secondary); }
+
+.controls {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ── The readout ───────────────────────────────────────────── */
+/* Reserved height, so an answer arriving does not shove the ball upward. */
+.readout {
+  min-height: 4.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  text-align: center;
+}
+.readout__answer {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-primary);
+  max-width: 22ch;
+}
+.readout__answer[data-empty] { color: var(--text-muted); }
+
+.tone-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+.tone-chip[data-tone="yes"]   { color: #6ee7b7; border-color: rgba(110, 231, 183, 0.35); }
+.tone-chip[data-tone="maybe"] { color: #fcd34d; border-color: rgba(252, 211, 77, 0.35); }
+.tone-chip[data-tone="no"]    { color: #fda4af; border-color: rgba(253, 164, 175, 0.35); }
+
+/* The whole page takes a hint of the verdict's colour. Subtle on purpose: the
+   answer is the text, and a green wash must not do the reading for you. */
+body[data-tone="yes"]   { --tone-glow: rgba(52, 211, 153, 0.16); }
+body[data-tone="maybe"] { --tone-glow: rgba(251, 191, 36, 0.14); }
+body[data-tone="no"]    { --tone-glow: rgba(244, 63, 94, 0.14); }
+body[data-tone] .stage::before {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--tone-glow), transparent 70%);
+  pointer-events: none;
+  transition: background var(--dur) var(--ease-out);
+}
+
+/* ── History ───────────────────────────────────────────────── */
+.history { width: 100%; max-width: 520px; }
+.history__title {
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+}
+.history__list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.history__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
+  border-left: 2px solid var(--border-subtle);
+  font-size: var(--text-sm);
+}
+.history__row[data-tone="yes"]   { border-left-color: #34d399; }
+.history__row[data-tone="maybe"] { border-left-color: #fbbf24; }
+.history__row[data-tone="no"]    { border-left-color: #f43f5e; }
+.history__answer { color: var(--text-secondary); }
+.history__q {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  margin-left: auto;
+  text-align: right;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── The flat ball (no WebGL) ──────────────────────────────── */
+/* Hidden until js/render.js marks the stage. Same loop as the real one: it
+   shakes, it settles, it sometimes needs turning over. */
+.flat-ball { display: none; }
+.stage[data-fallback="true"] .stage__ball { display: none; }
+.stage[data-fallback="true"] .flat-ball {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(62%, 300px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255,255,255,0.5), transparent 34%),
+    radial-gradient(circle at 50% 50%, #14141a, #05050a 72%);
+  box-shadow: inset -18px -22px 46px rgba(0,0,0,0.85), 0 18px 40px rgba(0,0,0,0.6);
+}
+.flat-ball__eight {
+  position: absolute;
+  top: 9%;
+  width: 34%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f2f2ee;
+  color: #0b0b0f;
+  font-weight: 700;
+  font-size: clamp(1.4rem, 6vw, 2.4rem);
+}
+.flat-ball__window {
+  position: absolute;
+  bottom: 12%;
+  width: 40%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #17347a, #08163a);
+  border: 6px solid #08080c;
+  color: #eef2ff;
+  font-size: clamp(0.6rem, 2.2vw, 0.8rem);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.15;
+  overflow: hidden;
+}
+.flat-ball[data-away="true"] .flat-ball__window,
+.flat-ball[data-phase="agitated"] .flat-ball__window { color: transparent; }
+.flat-ball[data-xray="true"] { opacity: 0.72; }
+
+.stage.is-shaking .flat-ball { animation: flat-shake 0.42s var(--ease-out) 2; }
+@keyframes flat-shake {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+  20%  { transform: translate(-56%, -52%) rotate(-7deg); }
+  45%  { transform: translate(-44%, -48%) rotate(8deg); }
+  70%  { transform: translate(-53%, -53%) rotate(-4deg); }
+}
+
+/* ── The answers sheet ─────────────────────────────────────── */
+/* .sheet gives the surface; the max-height animation it ships cannot hold a
+   twenty-row editor, so this one is shown and hidden outright. */
+.deck-sheet {
+  max-height: none;
+  overflow: visible;
+  width: 100%;
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-6);
+}
+.deck-sheet__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  max-width: 980px;
+  margin: 0 auto var(--space-4);
+}
+.deck-sheet__head > div { flex: 1; }
+.deck-sheet__title { font-size: var(--text-lg); }
+.deck-sheet__source { font-size: var(--text-xs); color: var(--text-muted); }
+.deck-sheet__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-6);
+  max-width: 980px;
+  margin: 0 auto;
+}
+.deck-col { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.deck-col__title {
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+}
+
+.field { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.field__label { font-size: var(--text-xs); color: var(--text-muted); }
+.field__row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.field__row > input, .field__row > select { flex: 1; min-width: 140px; }
+
+.deck-sheet input[type="text"],
+.deck-sheet select,
+.deck-sheet textarea,
+.deck-sheet input[type="file"] {
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px var(--space-2);
+  min-width: 0;
+}
+.deck-sheet textarea { resize: vertical; }
+.deck-sheet input[readonly] { color: var(--text-secondary); }
+
+.tone-counts { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+.deck__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.deck__row { display: flex; gap: var(--space-1); align-items: center; }
+.deck__text { flex: 1; min-width: 0; }
+.deck__tone { flex: 0 0 auto; max-width: 9.5rem; }
+.deck-add { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.deck-add > input { flex: 1; min-width: 150px; }
+
+.muted { font-size: var(--text-xs); color: var(--text-muted); line-height: 1.5; }
+
+/* A button that reads as a link, for the one-off "turn phone shaking back on". */
+.linklike {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent-bright);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ── H (hide chrome) ──────────────────────────────────────────
+ * The kit hides the bars; the stage should take the space back rather than
+ * leave a gap where the header was. */
+html[data-chrome="off"] .play { padding-top: var(--space-6); }
+
+/* ── Reduced motion ───────────────────────────────────────────
+ * js/ball3d.js already skips the tumble and the bubbles. This covers the
+ * flat ball, whose shake is a CSS animation. */
+@media (prefers-reduced-motion: reduce) {
+  .stage.is-shaking .flat-ball { animation: none; }
+}
+
+@media (max-width: 600px) {
+  .play { padding: var(--space-3) var(--space-4) var(--space-4); gap: var(--space-2); }
+  .stage { min-height: 240px; }
+  .readout { min-height: 3.6rem; }
+  .readout__answer { font-size: var(--text-lg); }
+  .deck-sheet { padding: var(--space-4); }
+}
+
+/* ── Embed builder ───────────────────────────────────────────
+ * embed-builder.html only. It reuses .field, .deck-col__title and .muted from
+ * the answers sheet, and adds the two-column layout, the preview frame and the
+ * message log.
+ */
+.builder {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-6);
+}
+.builder__col { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.builder__col input[type="text"],
+.builder__col select,
+.builder__col textarea {
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px var(--space-2);
+  min-width: 0;
+  width: 100%;
+}
+.builder__col textarea { resize: vertical; }
+
+.builder__preview {
+  width: 100%;
+  height: 460px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.check { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--text-secondary); }
+.check input { accent-color: var(--accent); }
+
+.log {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: var(--text-xs);
+}
+.log__row {
+  display: flex;
+  gap: var(--space-2);
+  padding: 5px var(--space-2);
+  background: var(--surface-1);
+  border-left: 2px solid var(--border-subtle);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.log__row[data-kind="answer"] { border-left-color: var(--accent); }
+.log__row[data-kind="sent"]   { border-left-color: #38bdf8; }
+.log__row[data-kind="error"]  { border-left-color: var(--danger); }
+.log__kind { flex: 0 0 4.5rem; font-weight: 600; color: var(--text-secondary); }
+.log__body { color: var(--text-muted); word-break: break-word; min-width: 0; }
+
+/* ── The Beacon Kit's resting position ──────────────────────── */
+/* Same problem aficion-site solved (css/style.css:72): the kit parks its control
+   at bottom-left 20px, which assumes a page that scrolls far enough to take the
+   footer out of the way. This page does not scroll, the ball wants the viewport,
+   and the app-mode footer's note is left-aligned, so at the default offset the
+   icon sits on top of that copy. --beacon-offset is the kit's documented per-site
+   knob (packages/neorgon-ui/beacon/README.md), and it goes on body rather than
+   :root because css/neorgon-beacon.css loads after this file and would win a tie.
+   Both values are the measured footer height plus the kit's own breathing room,
+   61 + 20 and 95 + 14, not guesses. */
+body { --beacon-offset: 82px; }
+@media (max-width: 700px) { body { --beacon-offset: 110px; } }

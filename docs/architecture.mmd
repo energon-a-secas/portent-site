@@ -1,0 +1,58 @@
+graph TD
+    subgraph inputs["Shaking it"]
+        POINTER["Mouse or touch drag"]
+        KEYS["Space and arrow keys<br/>via NeoKeys"]
+        MOTION["Device motion"]
+        PAD["Gamepad"]
+        MIC["Microphone"]
+    end
+
+    SHAKER["js/shake.js<br/>counts direction changes,<br/>so a straight swipe is not a shake"]
+
+    POINTER --> SHAKER
+    KEYS --> SHAKER
+    MOTION --> SHAKER
+    PAD --> SHAKER
+    MIC --> SHAKER
+
+    SHAKER -->|"shake(strength)"| BALL
+
+    subgraph ball["The ball"]
+        BALL["js/ball3d.js<br/>quaternion physics<br/>idle to agitated to<br/>awaiting-flip to revealed"]
+        ART["js/ballart.js<br/>meshes, materials,<br/>canvas textures"]
+        FLAT["js/flatball.js<br/>the no-WebGL twin,<br/>same hooks"]
+        BALL --> ART
+    end
+
+    BALL -->|"onNeedAnswer"| DECK
+    DECK["js/deck.js<br/>draws an answer,<br/>never repeats the last one"]
+    DECK --> BALL
+    BALL -->|"onReveal"| RENDER
+    FLAT -->|"onReveal"| RENDER
+    RENDER["js/render.js<br/>readout as a live region,<br/>hint, history, share"]
+
+    subgraph decks["Where answers come from"]
+        CLASSIC["The original twenty"]
+        SR["Stack Rank list<br/>priority becomes tone"]
+        PASTE["Pasted text or JSON"]
+        FILE["Uploaded file"]
+        LINK["A share link's<br/>URL fragment"]
+    end
+
+    CLASSIC --> STATE
+    SR -->|"fetch to the<br/>Convex HTTP endpoint"| STATE
+    PASTE --> STATE
+    FILE --> STATE
+    LINK --> STATE
+    STATE["js/state.js<br/>deck, history, settings<br/>localStorage"]
+    STATE --> DECK
+
+    RENDER -->|"share link<br/>with #d= payload"| OUT1["Another browser"]
+    RENDER -->|"iframe snippet"| EMBED
+
+    subgraph host["A host page"]
+        EMBED["embed.html + js/embed.js<br/>no storage, no shortcuts,<br/>no header"]
+        HOSTPAGE["The page framing it"]
+        HOSTPAGE -->|"portent:shake<br/>portent:deck<br/>portent:question"| EMBED
+        EMBED -->|"ready, shake,<br/>answer, error"| HOSTPAGE
+    end

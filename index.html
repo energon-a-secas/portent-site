@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- connect-src carries https://*.convex.cloud because importing a Stack Rank
+       list is a plain fetch to that deployment's HTTP query endpoint. No frame-ancestors:
+       embed.html is meant to be framed by other people's pages. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'none'; script-src 'self' 'unsafe-inline' https://gc.zgo.at https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.neorgon.org; font-src 'self'; img-src 'self' data: blob: https://cdn.neorgon.org https://neorgon.goatcounter.com; connect-src 'self' https://*.convex.cloud https://neorgon.goatcounter.com https://cloudflareinsights.com; frame-src 'self'; worker-src 'self' blob:">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Portent">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="neo-mark" content="on">
+  <title>Portent | Shake a 3D magic 8 ball for a verdict</title>
+  <meta name="description" content="A real magic 8 ball in 3D: shake it with the mouse, the keyboard, your phone or a gamepad. Keep the classic twenty answers or load your own deck">
+  <meta property="og:title" content="Portent | Shake a 3D magic 8 ball for a verdict">
+  <meta property="og:description" content="Shake it with the mouse, the keyboard, your phone or a gamepad. Classic twenty answers, your own deck, or a list pulled in from Stack Rank.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://portent.neorgon.com/">
+  <meta property="og:site_name" content="Neorgon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Portent | Shake a 3D magic 8 ball for a verdict">
+  <meta name="twitter:description" content="Mouse, keyboard, phone or gamepad. Classic twenty answers or your own deck.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://portent.neorgon.com/">
+  <meta property="og:locale" content="en_US">
+  <meta name="theme-color" content="#040714">
+  <!-- og:image: uncomment when the social preview exists (1200x630 JPG from og-studio, `make og`);
+       a live tag pointing at a missing og-preview.jpg is a 404 in every link preview
+  <meta property="og:image" content="https://portent.neorgon.com/og-preview.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Portent">
+  <meta name="twitter:image" content="https://portent.neorgon.com/og-preview.jpg"> -->
+  <!-- Fleet design tokens: canonical, do not redeclare locally -->
+  <link rel="stylesheet" href="https://cdn.neorgon.org/v1.0.0/styles/base.css">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- NeoKeys Kit (vendored). content="full" because the ball wants the whole
+       viewport, so H hides the footer too. The guard applies a cookie-hidden
+       chrome before first paint. js/events.js calls init() itself. -->
+  <meta name="neo-chrome-toggle" content="full">
+  <script>try{if(/(?:^|;\s*)neo_chrome=off/.test(document.cookie)){document.documentElement.dataset.chrome='off';document.documentElement.dataset.chromeScope='full'}}catch(e){}</script>
+  <link rel="stylesheet" href="css/neorgon-keys.css">
+  <!-- Neorgon Header Kit (vendored; ?header=live swaps CSS to CDN) -->
+  <script>(function(){var m=location.search.match(/[?&]theme=([\w-]+)/)||document.cookie.match(/(?:^|;\s*)neo_theme=([\w-]+)/);if(m&&m[1]!=='default')document.documentElement.dataset.theme=decodeURIComponent(m[1]);})();</script>
+  <meta name="neo-theme-switcher" content="footer">
+  <link rel="stylesheet" href="css/neorgon-header.css">
+  <link rel="stylesheet" href="css/neorgon-themes.css">
+  <link rel="stylesheet" href="https://cdn.neorgon.org/v1.0.0/header/season.css">
+  <script defer src="js/neorgon-header.js"></script>
+  <!-- Neorgon Footer Kit (vendored) -->
+  <meta name="neo-repo" content="energon-a-secas/portent-site">
+  <link rel="stylesheet" href="css/neorgon-footer.css">
+  <script defer src="js/neorgon-footer.js"></script>
+  <!-- Neorgon Beacon Kit (vendored) -->
+  <meta name="beacon-site" content="portent-site">
+  <link rel="stylesheet" href="css/neorgon-beacon.css">
+  <script defer src="js/neorgon-beacon.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Portent",
+    "description": "A 3D magic 8 ball you shake with the mouse, the keyboard, a phone or a gamepad. Classic twenty answers, your own deck, or a list imported from Stack Rank.",
+    "url": "https://portent.neorgon.com/",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Organization", "name": "Neorgon", "url": "https://neorgon.com/" }
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="header-bar" data-header-mode="app">
+    <div class="header-logo">
+      <a href="./" class="header-title-link">
+        <img src="energon-classic-logo.png" class="header-logo-img" alt="">
+        <div class="header-title-wrap">
+          <h1>Portent</h1>
+          <div class="header-subtitle">Shake it and read the verdict</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="header-right">
+      <div class="header-actions">
+        <button type="button" class="btn btn--ghost btn--sm" id="deckBtn" data-keep-mobile
+                aria-expanded="false" aria-controls="deckSheet">Answers</button>
+        <button type="button" class="btn btn--ghost btn--icon" id="soundBtn" data-keep-mobile
+                aria-pressed="true" aria-label="Sound on">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19.5 5.5a9 9 0 0 1 0 13"/></svg>
+        </button>
+        <button type="button" class="btn btn--ghost btn--icon" id="motionBtn" hidden
+                aria-pressed="false" aria-label="Phone shake off">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="8" y="2" width="8" height="20" rx="2"/><path d="M4 8 2 12l2 4M20 8l2 4-2 4"/></svg>
+        </button>
+        <button type="button" class="btn btn--ghost btn--icon" id="micBtn" hidden
+                aria-pressed="false" aria-label="Shout to shake off">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>
+        </button>
+      </div>
+
+      <a class="header-home" href="https://neorgon.com/" title="neorgon.com" aria-label="Neorgon home">
+        <svg class="nh-hub-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 4.4 18.58 8.2 18.58 15.8 12 19.6 5.42 15.8 5.42 8.2Z" fill="currentColor" stroke="none"/>
+          <g class="nh-orbit">
+            <path d="M2.47 17.50 A11.0 11.0 0 0 1 14.85 1.37" fill="none" stroke="currentColor" stroke-width="1.05" stroke-linecap="round"/>
+            <path d="M21.53 6.50 A11.0 11.0 0 0 1 9.15 22.63" fill="none" stroke="currentColor" stroke-width="1.05" stroke-linecap="round"/>
+            <circle cx="21.71" cy="6.84" r="1.25" fill="currentColor"/>
+            <circle cx="2.29" cy="17.16" r="1.25" fill="currentColor"/>
+          </g>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="play">
+
+      <div class="ask">
+        <label class="ask__label" for="question">Ask it something</label>
+        <input class="ask__field" type="text" id="question" maxlength="160" autocomplete="off"
+               placeholder="Should I ship it on a Friday?" enterkeyhint="go">
+      </div>
+
+      <!-- The stage owns every pointer gesture. The canvas goes in #ballHost;
+           #flatBall is the no-WebGL twin and stays invisible until the stage is
+           marked data-fallback="true". -->
+      <div class="stage" id="stage">
+        <div class="stage__ball" id="ballHost"></div>
+        <div class="flat-ball" id="flatBall" aria-hidden="true">
+          <span class="flat-ball__eight">8</span>
+          <span class="flat-ball__window" id="fallbackWindow"></span>
+        </div>
+      </div>
+
+      <p class="stage__fallback" id="fallbackNote" hidden></p>
+
+      <!-- The canvas is a picture. This is where the answer actually exists for
+           a screen reader, and it is the only live region on the page. -->
+      <div class="readout">
+        <p class="readout__answer" id="answerReadout" data-empty="true"
+           role="status" aria-live="polite" aria-atomic="true"></p>
+        <span class="tone-chip" id="answerTone" hidden></span>
+      </div>
+
+      <div class="controls">
+        <button type="button" class="btn btn--primary" id="shakeBtn">Shake it</button>
+        <button type="button" class="btn btn--secondary" id="flipBtn" hidden>Turn it over</button>
+      </div>
+
+      <p class="stage__hint" id="stageHint">Ask something, then shake</p>
+      <p class="stage__note" id="inputNote">Drag it, or press Space.</p>
+
+      <section class="history" id="historyPanel" aria-labelledby="historyTitle" hidden>
+        <h2 class="history__title" id="historyTitle">Earlier verdicts</h2>
+        <ul class="history__list" id="historyList"></ul>
+      </section>
+    </div>
+
+    <!-- A sheet, not a modal: the ball stays visible while a deck is edited, so
+         you can shake it and watch a new answer come up in the window. -->
+    <section class="sheet deck-sheet" id="deckSheet" aria-labelledby="deckSheetTitle" hidden>
+      <header class="deck-sheet__head">
+        <div>
+          <h2 class="deck-sheet__title" id="deckSheetTitle">Answers</h2>
+          <p class="deck-sheet__source" id="deckSource">The original twenty</p>
+        </div>
+        <button type="button" class="btn btn--ghost btn--icon" id="deckClose" aria-label="Close the answers sheet">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </header>
+
+      <div class="deck-sheet__grid">
+
+        <div class="deck-col">
+          <label class="field">
+            <span class="field__label">Deck name</span>
+            <input type="text" id="deckTitle" maxlength="80" autocomplete="off">
+          </label>
+
+          <div class="tone-counts" id="deckCounts" aria-label="Answers by tone"></div>
+
+          <ul class="deck__list" id="deckList"></ul>
+          <p class="muted" id="deckEmpty" hidden>No answers left, so the ball has nothing to say. Add one, or bring the original twenty back.</p>
+
+          <form class="deck-add" id="deckAddForm">
+            <input type="text" id="deckAddText" maxlength="120" placeholder="Add an answer" aria-label="New answer" autocomplete="off" required>
+            <select id="deckAddTone" aria-label="Tone of the new answer">
+              <option value="yes">Affirmative</option>
+              <option value="maybe" selected>Non-committal</option>
+              <option value="no">Negative</option>
+            </select>
+            <button type="submit" class="btn btn--secondary btn--sm">Add</button>
+          </form>
+
+          <button type="button" class="btn btn--ghost btn--sm" id="deckClassicBtn">Bring back the original twenty</button>
+        </div>
+
+        <div class="deck-col">
+          <h3 class="deck-col__title">Bring answers in</h3>
+
+          <form class="field" id="stackrankForm">
+            <span class="field__label">From a Stack Rank list</span>
+            <div class="field__row">
+              <input type="text" id="stackrankInput" placeholder="Paste a stackrank.neorgon.com link" autocomplete="off" required>
+              <button type="submit" class="btn btn--secondary btn--sm" id="stackrankBtn">Import</button>
+            </div>
+            <p class="muted" id="stackrankStatus" role="status"></p>
+            <p class="muted">
+              Open items only. Priority becomes the tone, so P1 and P2 read as affirmative,
+              P3 and P4 as non-committal, P5 and P6 as negative, and anything blocked reads
+              as negative whatever its priority. Done items are left out.
+            </p>
+          </form>
+
+          <form class="field" id="pasteForm">
+            <span class="field__label">From text or JSON</span>
+            <textarea id="pasteText" rows="4" placeholder="One answer per line. Start a line with + for affirmative, ~ for non-committal, - for negative."></textarea>
+            <button type="submit" class="btn btn--secondary btn--sm">Load these</button>
+          </form>
+
+          <label class="field">
+            <span class="field__label">From a file</span>
+            <input type="file" id="fileInput" accept=".json,.txt,application/json,text/plain">
+          </label>
+
+          <h3 class="deck-col__title">Send it somewhere</h3>
+
+          <label class="field">
+            <span class="field__label">Share link</span>
+            <div class="field__row">
+              <input type="text" id="shareLink" readonly>
+              <button type="button" class="btn btn--secondary btn--sm" id="shareCopyBtn">Copy</button>
+            </div>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Embed in a page</span>
+            <textarea id="embedSnippet" rows="4" readonly></textarea>
+            <div class="field__row">
+              <button type="button" class="btn btn--secondary btn--sm" id="embedCopyBtn">Copy the snippet</button>
+              <a class="btn btn--ghost btn--sm" id="embedPreviewLink" href="embed.html" target="_blank" rel="noopener">Preview it</a>
+            </div>
+            <p class="muted">
+              The embedded ball carries this deck with it. A host page can also
+              shake it, swap the deck, or read the answer back over postMessage.
+            </p>
+          </label>
+
+          <button type="button" class="btn btn--ghost btn--sm" id="downloadBtn">Download the deck as JSON</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="neo-footer" data-footer-mode="app" data-stick="off">
+    A toy. It runs entirely in your browser, and it decides nothing.
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
