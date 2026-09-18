@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- connect-src carries https://*.convex.cloud because importing a Stack Rank
-       list is a plain fetch to that deployment's HTTP query endpoint. No frame-ancestors:
-       embed.html is meant to be framed by other people's pages. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'none'; script-src 'self' 'unsafe-inline' https://gc.zgo.at https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.neorgon.org; font-src 'self'; img-src 'self' data: blob: https://cdn.neorgon.org https://neorgon.goatcounter.com; connect-src 'self' https://*.convex.cloud https://neorgon.goatcounter.com https://cloudflareinsights.com; frame-src 'self'; worker-src 'self' blob:">
-  <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-title" content="Portent">
   <link rel="manifest" href="/site.webmanifest">
   <meta name="neo-mark" content="on">
+  <!-- connect-src carries https://*.convex.cloud because importing a Stack Rank
+       list is a plain fetch to that deployment's HTTP query endpoint. No frame-ancestors:
+       embed.html is meant to be framed by other people's pages. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'none'; script-src 'self' 'unsafe-inline' https://gc.zgo.at https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.neorgon.org; font-src 'self'; img-src 'self' data: blob: https://cdn.neorgon.org https://neorgon.goatcounter.com; connect-src 'self' https://*.convex.cloud https://neorgon.goatcounter.com https://cloudflareinsights.com; frame-src 'self'; worker-src 'self' blob:">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <title>Portent | Shake a 3D magic 8 ball for a verdict</title>
   <meta name="description" content="A real magic 8 ball in 3D: shake it with the mouse, the keyboard, your phone or a gamepad. Keep the classic twenty answers or load your own deck">
   <meta property="og:title" content="Portent | Shake a 3D magic 8 ball for a verdict">
@@ -29,13 +29,11 @@
   <link rel="canonical" href="https://portent.neorgon.com/">
   <meta property="og:locale" content="en_US">
   <meta name="theme-color" content="#040714">
-  <!-- og:image: uncomment when the social preview exists (1200x630 JPG from og-studio, `make og`);
-       a live tag pointing at a missing og-preview.jpg is a 404 in every link preview
   <meta property="og:image" content="https://portent.neorgon.com/og-preview.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Portent">
-  <meta name="twitter:image" content="https://portent.neorgon.com/og-preview.jpg"> -->
+  <meta name="twitter:image" content="https://portent.neorgon.com/og-preview.jpg">
   <!-- Fleet design tokens: canonical, do not redeclare locally -->
   <link rel="stylesheet" href="https://cdn.neorgon.org/v1.0.0/styles/base.css">
   <link rel="stylesheet" href="css/style.css">

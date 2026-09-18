@@ -37,6 +37,14 @@ const FACING_FORGIVING = 0.42;  // window this close to the camera eases the res
 const DOWN = new THREE.Vector3(0, -1, 0);
 const TOWARD_CAMERA = new THREE.Vector3(0, 0, 1);
 
+// How the ball sits when nothing has touched it. The 8 is at the top pole and
+// the window at the bottom, so at identity the camera sees the bare equator: a
+// black sphere that could be anything. Tilting the top 36 degrees toward the
+// viewer is how the toy sits on a desk, and it is what makes the thing on screen
+// recognisably an eight ball before the first shake. It costs nothing afterwards,
+// since a shake randomises the orientation completely.
+const REST = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.63);
+
 function stub(reason) {
   return {
     supported: false, reason,
@@ -96,6 +104,7 @@ export function createBall(opts) {
   // them apart means a bob can never leak into the physics quaternion.
   const pivot = new THREE.Group();
   const ball = new THREE.Group();
+  ball.quaternion.copy(REST);
   pivot.add(ball);
   scene.add(pivot);
 
@@ -341,7 +350,10 @@ export function createBall(opts) {
     },
 
     reset() {
-      ball.quaternion.identity();
+      // Back to REST, not to identity: identity is the anonymous equator-on pose
+      // nothing else in the app ever shows, so straightening the ball would leave
+      // it looking less like an eight ball than it did at load.
+      ball.quaternion.copy(REST);
       angVel.set(0, 0, 0);
       flipTarget = null;
       agitation = 0;
