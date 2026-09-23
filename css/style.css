@@ -971,16 +971,3 @@ html[data-chrome="off"] .play { padding-top: var(--space-6); }
 .log__row[data-kind="error"]  { border-left-color: var(--danger); }
 .log__kind { flex: 0 0 4.5rem; font-weight: 600; color: var(--text-secondary); }
 .log__body { color: var(--text-muted); word-break: break-word; min-width: 0; }
-
-/* ── The Beacon Kit's resting position ──────────────────────── */
-/* Same problem aficion-site solved (css/style.css:72): the kit parks its control
-   at bottom-left 20px, which assumes a page that scrolls far enough to take the
-   footer out of the way. This page does not scroll, the ball wants the viewport,
-   and the app-mode footer's note is left-aligned, so at the default offset the
-   icon sits on top of that copy. --beacon-offset is the kit's documented per-site
-   knob (packages/neorgon-ui/beacon/README.md), and it goes on body rather than
-   :root because css/neorgon-beacon.css loads after this file and would win a tie.
-   Both values are the measured footer height plus the kit's own breathing room,
-   61 + 20 and 95 + 14, not guesses. */
-body { --beacon-offset: 82px; }
-@media (max-width: 700px) { body { --beacon-offset: 110px; } }
