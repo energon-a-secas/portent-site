@@ -14,10 +14,10 @@
 import * as THREE from '../vendor/three/three.module.min.js';   // by path, see js/ball3d.js
 
 export const R = 1.6;                 // shell radius, the unit everything else uses
-export const HOLE = 0.42;             // polar angle of the opening at the south pole
+export const HOLE = 0.59;             // a generous window that can actually be read
 export const RIM_Y = -R * Math.cos(HOLE);
 export const RIM_R = R * Math.sin(HOLE);
-export const WINDOW_Y = RIM_Y - 0.20; // the glass, on the underside of the collar
+export const WINDOW_Y = RIM_Y - 0.17; // the glass, on the underside of the collar
 
 /** A canvas at device-sane resolution, returned with its 2D context. */
 function canvas2d(w, h) {
@@ -41,10 +41,10 @@ function asTexture(canvas, renderer) {
 export function buildEnvironment(renderer) {
   const [c, g] = canvas2d(1024, 512);
   const sky = g.createLinearGradient(0, 0, 0, 512);
-  sky.addColorStop(0, '#26304a');
-  sky.addColorStop(0.48, '#141a2b');
-  sky.addColorStop(0.52, '#0a0e18');
-  sky.addColorStop(1, '#05070d');
+  sky.addColorStop(0, '#35405d');
+  sky.addColorStop(0.48, '#20253b');
+  sky.addColorStop(0.52, '#141827');
+  sky.addColorStop(1, '#090b14');
   g.fillStyle = sky;
   g.fillRect(0, 0, 1024, 512);
 
@@ -63,9 +63,9 @@ export function buildEnvironment(renderer) {
     g.fill();
     g.restore();
   };
-  box(300, 120, 210, 130, 0.95);   // key light, upper left
-  box(760, 175, 130, 95, 0.42);    // fill, upper right
-  box(520, 470, 300, 90, 0.16);    // floor bounce
+  box(300, 120, 245, 160, 0.95);   // key light, upper left
+  box(760, 175, 165, 125, 0.56);   // fill, upper right
+  box(520, 470, 300, 90, 0.25);    // floor bounce
 
   const tex = asTexture(c, renderer);
   tex.mapping = THREE.EquirectangularReflectionMapping;
@@ -105,53 +105,70 @@ export function drawDieFace(canvas, text) {
   g.clearRect(0, 0, W, H);
 
   const bg = g.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#1c3a86');
-  bg.addColorStop(0.55, '#132a63');
-  bg.addColorStop(1, '#0d1e4c');
+  bg.addColorStop(0, '#3154ba');
+  bg.addColorStop(0.55, '#25449e');
+  bg.addColorStop(1, '#142f77');
   g.fillStyle = bg;
   g.fillRect(0, 0, W, H);
 
-  // Moulding marks: the face is not flat plastic, it has a shallow bevel.
-  g.strokeStyle = 'rgba(255,255,255,0.10)';
-  g.lineWidth = W * 0.012;
-  g.beginPath();
-  g.moveTo(W * 0.5, H * 0.10);
-  g.lineTo(W * 0.93, H * 0.86);
-  g.lineTo(W * 0.07, H * 0.86);
-  g.closePath();
-  g.stroke();
-
-  g.fillStyle = '#f2f6ff';
+  g.fillStyle = '#f7f8ff';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  const boxW = W * 0.58;
-  for (let size = Math.round(W * 0.115); size >= Math.round(W * 0.035); size -= 2) {
-    g.font = `600 ${size}px "Helvetica Neue", Arial, sans-serif`;
-    const lines = wrap(g, String(text || ''), boxW);
-    const lineH = size * 1.16;
-    if (lines.length * lineH > H * 0.36 && size > W * 0.036) continue;
-    const top = H * 0.62 - ((lines.length - 1) * lineH) / 2;
-    lines.forEach((line, i) => g.fillText(line, W * 0.5, top + i * lineH));
-    break;
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return canvas;
+  const minSize = Math.round(W * 0.055);
+  // Each lower line gets less width because the die narrows toward its tip.
+  // A rectangular text box clips a phrase like "You may rely on it" at the
+  // second line, even when the canvas says that the line fits.
+  const widths = [[0.43], [0.52, 0.35], [0.55, 0.42, 0.27]];
+  let chosen = null;
+  for (let size = Math.round(W * 0.13); size >= minSize; size -= 2) {
+    g.font = `700 ${size}px "Helvetica Neue", Arial, sans-serif`;
+    for (const ratios of widths) {
+      if (ratios.length * size * 1.1 > H * 0.36) continue;
+      const lines = fitTriangleLines(g, words, ratios.map(ratio => ratio * W));
+      if (lines) {
+        chosen = { lines, size };
+        break;
+      }
+    }
+    if (chosen) break;
   }
+  // An imported answer can be 120 characters long. Keep its complete text in
+  // the readout and show the longest legible opening on the die.
+  if (!chosen) {
+    g.font = `700 ${minSize}px "Helvetica Neue", Arial, sans-serif`;
+    for (let count = Math.min(words.length, 8); count > 0 && !chosen; count--) {
+      const preview = words.slice(0, count);
+      if (count < words.length) preview[preview.length - 1] += '…';
+      for (const ratios of widths) {
+        const lines = fitTriangleLines(g, preview, ratios.map(ratio => ratio * W));
+        if (lines) { chosen = { lines, size: minSize }; break; }
+      }
+    }
+  }
+  if (!chosen) chosen = { lines: ['Read below'], size: minSize };
+  const { lines, size } = chosen;
+  g.font = `700 ${size}px "Helvetica Neue", Arial, sans-serif`;
+  const lineH = size * 1.1;
+  const center = lines.length === 3 ? 0.60 : 0.56;
+  const top = H * center - ((lines.length - 1) * lineH) / 2;
+  lines.forEach((line, i) => g.fillText(line, W * 0.5, top + i * lineH));
   return canvas;
 }
 
-function wrap(g, text, maxWidth) {
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines = [];
-  let line = '';
-  for (const word of words) {
-    const next = line ? `${line} ${word}` : word;
-    if (g.measureText(next).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = next;
-    }
+function fitTriangleLines(g, words, widths, at = 0, line = 0) {
+  if (line === widths.length - 1) {
+    const tail = words.slice(at).join(' ');
+    return tail && g.measureText(tail).width <= widths[line] ? [tail] : null;
   }
-  if (line) lines.push(line);
-  return lines.length ? lines : [''];
+  for (let end = words.length - (widths.length - line - 1); end > at; end--) {
+    const part = words.slice(at, end).join(' ');
+    if (g.measureText(part).width > widths[line]) continue;
+    const rest = fitTriangleLines(g, words, widths, end, line + 1);
+    if (rest) return [part, ...rest];
+  }
+  return null;
 }
 
 export function buildDieFaceTexture(renderer, text) {
@@ -208,6 +225,44 @@ export function buildBubbleTexture(renderer) {
   return asTexture(c, renderer);
 }
 
+/** A brief impact crack, drawn in front of the shell after a hard throw. */
+export function buildFractureTexture(renderer) {
+  const [c, g] = canvas2d(512, 512);
+  g.save();
+  g.beginPath();
+  g.arc(256, 256, 236, 0, Math.PI * 2);
+  g.clip();
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  g.shadowColor = 'rgba(153, 174, 255, 0.8)';
+  g.shadowBlur = 13;
+  for (let i = 0; i < 9; i++) {
+    const a = i * TAU / 9 + (i % 2 ? 0.12 : -0.08);
+    const path = [[256, 256]];
+    for (let j = 1; j <= 4; j++) {
+      const r = j * 55;
+      const bend = Math.sin(i * 3.7 + j * 2.4) * 17;
+      path.push([256 + Math.cos(a) * r - Math.sin(a) * bend,
+        256 + Math.sin(a) * r + Math.cos(a) * bend]);
+    }
+    g.strokeStyle = 'rgba(222, 231, 255, 0.9)';
+    g.lineWidth = i % 3 === 0 ? 3.5 : 2.2;
+    g.beginPath();
+    path.forEach(([x, y], j) => j ? g.lineTo(x, y) : g.moveTo(x, y));
+    g.stroke();
+    const [bx, by] = path[2];
+    const side = i % 2 ? 1 : -1;
+    g.strokeStyle = 'rgba(157, 180, 255, 0.72)';
+    g.lineWidth = 1.7;
+    g.beginPath();
+    g.moveTo(bx, by);
+    g.lineTo(bx + Math.cos(a + side * 0.65) * 48, by + Math.sin(a + side * 0.65) * 48);
+    g.stroke();
+  }
+  g.restore();
+  return asTexture(c, renderer);
+}
+
 // ── The ball's parts ─────────────────────────────────────────
 // Every mesh, material and texture inside the shell, assembled onto `ball` and
 // handed back so js/ball3d.js can move them. It builds the object and nothing
@@ -224,8 +279,8 @@ const BUBBLES = 70;
 export function buildBallParts(renderer, ball, dieRestY) {
   // ── Shell, open at the south pole so the window looks into the liquid ──
   const shellMat = new THREE.MeshPhysicalMaterial({
-    color: 0x08080a, roughness: 0.17, metalness: 0,
-    clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.15
+    color: 0x181820, roughness: 0.21, metalness: 0,
+    clearcoat: 1, clearcoatRoughness: 0.07, envMapIntensity: 1.45
   });
   const shell = new THREE.Mesh(
     new THREE.SphereGeometry(R, 112, 72, 0, TAU, 0, Math.PI - HOLE), shellMat
@@ -253,23 +308,22 @@ export function buildBallParts(renderer, ball, dieRestY) {
   // ── Window housing: collar, bezel, glass ──
   const blackMat = new THREE.MeshPhysicalMaterial({ color: 0x0a0a0c, roughness: 0.5, metalness: 0 });
   const collar = new THREE.Mesh(
-    new THREE.CylinderGeometry(RIM_R, RIM_R * 0.94, 0.20, 96, 1, true), blackMat
+    new THREE.CylinderGeometry(RIM_R, RIM_R * 0.94, 0.17, 96, 1, true), blackMat
   );
   collar.material.side = THREE.DoubleSide;
-  collar.position.y = RIM_Y - 0.10;
+  collar.position.y = RIM_Y - 0.085;
   ball.add(collar);
 
-  const bezel = new THREE.Mesh(new THREE.RingGeometry(0.50, RIM_R * 0.94, 96), blackMat);
+  const bezel = new THREE.Mesh(new THREE.RingGeometry(0.76, RIM_R * 0.94, 96), blackMat);
   bezel.rotation.x = Math.PI / 2;
   bezel.position.y = WINDOW_Y + 0.004;
   ball.add(bezel);
 
   const glass = new THREE.Mesh(
-    new THREE.CircleGeometry(0.505, 96),
-    new THREE.MeshPhysicalMaterial({
-      color: 0xdce8ff, transparent: true, opacity: 0.28, roughness: 0.04,
-      metalness: 0, transmission: 0.85, thickness: 0.25, ior: 1.48,
-      clearcoat: 1, clearcoatRoughness: 0.02, side: THREE.DoubleSide, depthWrite: false
+    new THREE.CircleGeometry(0.765, 96),
+    new THREE.MeshBasicMaterial({
+      color: 0xe5edff, transparent: true, opacity: 0.06,
+      side: THREE.DoubleSide, depthWrite: false
     })
   );
   glass.rotation.x = Math.PI / 2;
@@ -278,8 +332,8 @@ export function buildBallParts(renderer, ball, dieRestY) {
   ball.add(glass);
 
   // ── Liquid, die, bubbles ──
-  const liquidMat = new THREE.MeshPhysicalMaterial({
-    color: 0x0e2050, transparent: true, opacity: 0.62, roughness: 0.35,
+  const liquidMat = new THREE.MeshBasicMaterial({
+    color: 0x1d397e, transparent: true, opacity: 0.09,
     side: THREE.DoubleSide, depthWrite: false
   });
   const liquid = new THREE.Mesh(new THREE.SphereGeometry(1.50, 72, 52), liquidMat);
@@ -288,8 +342,8 @@ export function buildBallParts(renderer, ball, dieRestY) {
 
   const dieTex = buildDieFaceTexture(renderer, '');
   const die = new THREE.Mesh(
-    buildDieFaceGeometry(0.46),
-    new THREE.MeshStandardMaterial({ map: dieTex, roughness: 0.34, metalness: 0, side: THREE.DoubleSide })
+    buildDieFaceGeometry(0.72),
+    new THREE.MeshBasicMaterial({ map: dieTex, side: THREE.DoubleSide })
   );
   die.rotation.x = Math.PI / 2;
   die.position.y = dieRestY;

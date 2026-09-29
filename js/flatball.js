@@ -3,20 +3,24 @@
 // interface as js/ball3d.js, so js/events.js never branches on which one it got.
 //
 // It is not a placeholder. It shakes, it makes you wait for the die to settle,
-// it needs turning over, and it answers. The only thing missing is the 3D.
+// it settles, and it answers. The only thing missing is the 3D.
 
 const SETTLE_MS = 780;
 
-export function createFlatBall({ stage, ball: el, onNeedAnswer, onReveal, onShakeStart, onNeedFlip, onNoAnswer, onKnock }) {
+export function createFlatBall({ stage, ball: el, onNeedAnswer, onReveal, onShakeStart, onNoAnswer, onKnock, reducedMotion }) {
   let phase = 'idle';
   let answer = null;
   let timer = null;
   let tiltX = 0, tiltY = 0;
   let facingAway = false;
+  let dragX = 0, dragY = 0;
+  let crackTimer = null;
 
   function paint() {
     el.style.setProperty('--tilt-x', `${tiltX.toFixed(2)}deg`);
     el.style.setProperty('--tilt-y', `${tiltY.toFixed(2)}deg`);
+    el.style.setProperty('--drag-x', `${dragX.toFixed(1)}px`);
+    el.style.setProperty('--drag-y', `${dragY.toFixed(1)}px`);
     el.dataset.phase = phase;
     el.dataset.away = facingAway ? 'true' : 'false';
   }
@@ -35,17 +39,7 @@ export function createFlatBall({ stage, ball: el, onNeedAnswer, onReveal, onShak
       return;
     }
     if (onKnock) onKnock(0.6);
-    // A flat ball has no orientation to speak of, so it turns away only
-    // sometimes: enough that the flip control means something, not enough to
-    // become a chore on a browser that is already having a hard day.
-    facingAway = Math.random() < 0.35;
-    if (facingAway) {
-      phase = 'awaiting-flip';
-      paint();
-      if (onNeedFlip) onNeedFlip();
-    } else {
-      reveal();
-    }
+    reveal();
   }
 
   function reveal() {
@@ -59,6 +53,35 @@ export function createFlatBall({ stage, ball: el, onNeedAnswer, onReveal, onShak
     supported: true,
     flat: true,
     reason: null,
+
+    hitTest(x, y) {
+      const rect = el.getBoundingClientRect();
+      return Math.hypot(x - rect.left - rect.width / 2, y - rect.top - rect.height / 2)
+        <= Math.min(rect.width, rect.height) / 2;
+    },
+
+    grab() {
+      el.classList.add('is-dragging');
+    },
+
+    dragMove(dx, dy) {
+      const rect = stage.getBoundingClientRect();
+      dragX = Math.max(-rect.width * 0.3, Math.min(rect.width * 0.3, dragX + dx));
+      dragY = Math.max(-rect.height * 0.27, Math.min(rect.height * 0.27, dragY + dy));
+      paint();
+    },
+
+    drop(vx = 0, vy = 0) {
+      el.classList.remove('is-dragging');
+      if (Math.hypot(vx, vy) > 1.45 && Math.hypot(dragX, dragY) > 35) {
+        stage.classList.add('is-cracked');
+        clearTimeout(crackTimer);
+        crackTimer = setTimeout(() => stage.classList.remove('is-cracked'), 1050);
+        if (onKnock) onKnock(1);
+      }
+      dragX = dragY = 0;
+      paint();
+    },
 
     impulse(dx, dy) {
       tiltY = Math.max(-22, Math.min(22, tiltY + dx * 0.22));
@@ -81,6 +104,11 @@ export function createFlatBall({ stage, ball: el, onNeedAnswer, onReveal, onShak
       stage.classList.add('is-shaking');
       if (onShakeStart) onShakeStart();
       clearTimeout(timer);
+      if (reducedMotion?.()) {
+        stage.classList.remove('is-shaking');
+        settle();
+        return;
+      }
       timer = setTimeout(settle, SETTLE_MS * (0.7 + 0.5 * (1 - strength)));
     },
 
@@ -95,6 +123,6 @@ export function createFlatBall({ stage, ball: el, onNeedAnswer, onReveal, onShak
     phase: () => phase,
     resize() {},
     snapshot: () => null,
-    dispose() { clearTimeout(timer); }
+    dispose() { clearTimeout(timer); clearTimeout(crackTimer); }
   };
 }

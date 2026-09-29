@@ -26,10 +26,8 @@
 //   { source: 'portent', type: 'answer', text, tone, question }
 //   { source: 'portent', type: 'error',  message }
 //
-// A shake the host asked for (`portent:shake` or `auto=1`) always ends in an
-// `answer`. A shake the visitor performed inside the frame keeps the real toy's
-// last step and waits for them to turn the ball over, so the answer arrives when
-// they read it. See `hostDriven` below.
+// Every shake ends in an `answer` once the ball settles and its window turns
+// toward the viewer. The same reveal path serves visitors and host messages.
 //
 // The target origin is '*' on purpose. Nothing here is private: the payload is
 // an answer the host page just asked for, and it already knows the deck because
@@ -46,14 +44,6 @@ import * as sound from './sound.js';
 const params = new URLSearchParams(location.search);
 const el = id => document.getElementById(id);
 const noControls = params.get('controls') === 'off';
-
-// Turning the ball over is the visitor's move, and the embed keeps it for a
-// visitor who shook the ball themselves inside the frame. It cannot keep it for a
-// shake the host asked for: the host cannot reach into the frame to click, so
-// waiting for a click there means the `answer` message it was promised never
-// arrives and nothing says why. Same with controls=off, where there is no button
-// to click at all. So a host-driven shake resolves its own flip.
-let hostDriven = false;
 
 function post(type, extra = {}) {
   try {
@@ -113,8 +103,7 @@ const hooks = {
     post('shake');
   },
   onNeedFlip: () => {
-    if (hostDriven || noControls) { ball.flip(); return; }
-    el('flipBtn').hidden = false;
+    ball.flip();
   },
   onKnock: intensity => sound.knock(intensity),
   reducedMotion: () => matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -134,7 +123,6 @@ const shaker = createShaker({
   bindKeys: true,
   isTyping: () => false,
   onShake: strength => {
-    hostDriven = false;
     sound.unlock();
     sound.slosh(strength);
     ball.shake(strength);
@@ -143,7 +131,6 @@ const shaker = createShaker({
 shaker.attach();
 
 el('shakeBtn').addEventListener('click', () => {
-  hostDriven = false;
   sound.unlock();
   sound.slosh(1);
   ball.shake(1);
@@ -166,7 +153,6 @@ addEventListener('message', event => {
   if (!msg || typeof msg !== 'object') return;
   switch (msg.type) {
     case 'portent:shake':
-      hostDriven = true;
       sound.unlock();
       ball.shake(typeof msg.strength === 'number' ? msg.strength : 1);
       break;
@@ -197,4 +183,4 @@ if (listId) {
 }
 
 post('ready', { answers: state.deck.answers.length });
-if (params.get('auto') === '1') setTimeout(() => { hostDriven = true; ball.shake(1); }, 300);
+if (params.get('auto') === '1') setTimeout(() => ball.shake(1), 300);

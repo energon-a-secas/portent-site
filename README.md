@@ -31,8 +31,8 @@ Shake a real 3D magic 8 ball for a verdict, with the classic 20 answers or a dec
 ## Overview
 
 A magic 8 ball rendered in 3D, with the loop the real toy has: shake it, the die
-sinks out of sight, the ball spins down, the die rises to the window, and you turn
-the ball over to read what it says. Nothing is decided until it comes to rest, so
+sinks out of sight, the ball spins down, and the die rises into a window that turns
+toward you. Nothing is decided until it comes to rest, so
 it cannot be used as a button that prints a random string.
 
 It ships the original twenty answers. It can also read a deck from a Stack Rank
@@ -46,11 +46,11 @@ the host page asks it over `postMessage`.
 
 ## Features
 
-- **Shake it however you like** -- drag it with the mouse or a finger, press Space,
-  nudge it with the arrow keys, shake the phone, or shout at it. A shake is counted
-  by direction changes, so a fast straight swipe is not one
-- **A real reveal** -- the die sinks, rises and lands off-square, and the window has
-  to be facing you before you can read it
+- **Shake it however you like** -- grab and fling it with the mouse or a finger,
+  press Space, nudge it with the arrow keys, shake the phone, or shout at it.
+  A hard throw briefly cracks the shell
+- **A real reveal** -- the die sinks, rises and turns upright in the window so
+  its answer is readable when the ball settles
 - **The original twenty** -- or your own deck, edited in place, with each answer
   tagged affirmative, non-committal or negative
 - **Import from Stack Rank** -- open items become answers and priority becomes the

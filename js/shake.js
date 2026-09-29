@@ -2,9 +2,9 @@
 // Every input that can disturb the ball lives here, and nothing else does: the
 // UI shortcuts (`?`, the deck sheet, sound) belong to js/events.js.
 //
-//   pointer      drag to spin, with inertia on release; shake the mouse and it
-//                counts as a shake, the same way your wrist does
-//   touch        the same path, plus a fling
+//   pointer      grab and drag the ball, then release it with inertia; a quick
+//                fling or a few sharp reversals count as a shake
+//   touch        follows the same pointer path
 //   wheel        spin it on the spot
 //   keyboard     Space or Enter shakes, arrows nudge, always reachable
 //   device       a real shake of a real phone, gated behind iOS permission
@@ -17,6 +17,12 @@
 const REVERSAL_WINDOW = 620;   // ms in which direction changes accumulate
 const REVERSALS_NEEDED = 3;
 const MIN_FLICK = 0.55;        // px/ms, below this a wobble is not a shake
+const FLING_WINDOW = 120;      // ms of recent movement used for release velocity
+const FLING_RELEASE_GRACE = 220; // ms to allow a finger to lift after its last move
+const FLING_MIN_SPEED = 1.1;   // px/ms: a deliberate throw, not a gentle drag
+const FLING_MIN_TRAVEL = 48;   // px: a short click or tremor cannot shake the ball
+const THROW_MIN_TRAVEL = 120;  // px: a clear throw even when WebGL delays move events
+const THROW_MAX_DURATION = 750; // ms: a long inspection drag is not a throw
 const MOTION_THRESHOLD = 17;   // m/s^2 of combined acceleration delta
 const MOTION_COOLDOWN = 900;   // ms, or one phone shake fires twenty times
 const MIC_THRESHOLD = 0.22;    // normalised RMS
@@ -34,7 +40,10 @@ export function createShaker({ stage, ball, onShake, onSource, isTyping, bindKey
   const typing = () => (isTyping ? isTyping() : false);
   let dragging = false;
   let lastX = 0, lastY = 0, lastT = 0;
+  let startX = 0, startY = 0, startT = 0;
   let dirX = 0, reversals = 0, reversalStart = 0, peak = 0;
+  let shookThisDrag = false;
+  let recentMoves = [];
   let pointerId = null;
 
   const capabilities = {
@@ -52,13 +61,43 @@ export function createShaker({ stage, ball, onShake, onSource, isTyping, bindKey
   }
 
   // ── Pointer ──
+  function overBall(x, y) {
+    if (typeof ball.hitTest === 'function') return ball.hitTest(x, y);
+    // The flat fallback has no scene to raycast. Use its rendered circle when
+    // available; older ball implementations get the stage-centered estimate.
+    const flat = stage.querySelector?.('.flat-ball');
+    const flatRect = flat?.getBoundingClientRect();
+    if (flatRect?.width && flatRect?.height) {
+      return Math.hypot(x - (flatRect.left + flatRect.width / 2),
+        y - (flatRect.top + flatRect.height / 2)) <= Math.min(flatRect.width, flatRect.height) / 2;
+    }
+    const rect = stage.getBoundingClientRect();
+    const radius = Math.min(rect.width, rect.height) * 0.43;
+    return Math.hypot(x - (rect.left + rect.width / 2),
+      y - (rect.top + rect.height / 2)) <= radius;
+  }
+
+  function rememberMove(x, y, t) {
+    recentMoves.push({ x, y, t });
+    while (recentMoves.length > 1 && t - recentMoves[0].t > FLING_WINDOW) {
+      recentMoves.shift();
+    }
+  }
+
   function onPointerDown(e) {
-    if (e.button !== undefined && e.button !== 0) return;
+    if (dragging || (e.button !== undefined && e.button !== 0)
+      || e.isPrimary === false || !overBall(e.clientX, e.clientY)) return;
     dragging = true;
     pointerId = e.pointerId;
-    stage.setPointerCapture?.(e.pointerId);
+    if (e.pointerId !== undefined) {
+      try { stage.setPointerCapture?.(e.pointerId); } catch { /* Window listeners still finish the drag. */ }
+    }
     lastX = e.clientX; lastY = e.clientY; lastT = e.timeStamp;
+    startX = lastX; startY = lastY; startT = lastT;
+    recentMoves = [{ x: lastX, y: lastY, t: lastT }];
     dirX = 0; reversals = 0; reversalStart = e.timeStamp; peak = 0;
+    shookThisDrag = false;
+    ball.grab?.();
     stage.classList.add('is-grabbed');
   }
 
@@ -68,7 +107,9 @@ export function createShaker({ stage, ball, onShake, onSource, isTyping, bindKey
     const dx = e.clientX - lastX;
     const dy = e.clientY - lastY;
     lastX = e.clientX; lastY = e.clientY; lastT = e.timeStamp;
+    if (dx || dy) rememberMove(lastX, lastY, lastT);
 
+    ball.dragMove?.(dx, dy);
     ball.impulse(dx, dy, 1);
 
     // A shake is a hand changing its mind quickly. Count sign changes in the
@@ -84,18 +125,62 @@ export function createShaker({ stage, ball, onShake, onSource, isTyping, bindKey
       if (dirX !== 0 && dir !== dirX) reversals++;
       dirX = dir;
     }
-    if (reversals >= REVERSALS_NEEDED) {
+    if (reversals >= REVERSALS_NEEDED && !shookThisDrag) {
+      shookThisDrag = true;
       reversals = 0; reversalStart = e.timeStamp;
       fire(Math.min(1, 0.4 + peak / 6), 'pointer');
     }
   }
 
-  function endDrag(e) {
-    if (!dragging) return;
+  function endDrag(e, cancelled = false) {
+    if (!dragging || (e?.pointerId !== undefined && pointerId !== null && e.pointerId !== pointerId)) return;
+    if (!cancelled && e && Number.isFinite(e.clientX) && Number.isFinite(e.clientY)) {
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      if (dx || dy) {
+        ball.dragMove?.(dx, dy);
+        ball.impulse(dx, dy, 1);
+        lastX = e.clientX; lastY = e.clientY; lastT = e.timeStamp;
+        rememberMove(lastX, lastY, lastT);
+      }
+    }
+
+    const oldest = recentMoves[0];
+    const latest = recentMoves[recentMoves.length - 1];
+    const elapsed = Math.max(1, (latest?.t ?? lastT) - (oldest?.t ?? lastT));
+    // A stationary pointerup is not another motion sample. The last real move
+    // still supplies release velocity if the finger lifted shortly afterward.
+    const fresh = !cancelled && e && latest && e.timeStamp - latest.t <= FLING_RELEASE_GRACE;
+    const vx = fresh && recentMoves.length > 1 ? (latest.x - oldest.x) / elapsed : 0;
+    const vy = fresh && recentMoves.length > 1 ? (latest.y - oldest.y) / elapsed : 0;
+    const speed = Math.hypot(vx, vy);
+    const travel = Math.hypot(lastX - startX, lastY - startY);
+    const duration = e ? e.timeStamp - startT : Infinity;
+    // Slow rendering can leave just one sample in FLING_WINDOW. A substantial
+    // forward throw still counts, but its physical drop keeps the measured speed.
+    const deliberateThrow = fresh && travel >= THROW_MIN_TRAVEL && duration <= THROW_MAX_DURATION;
+    const shouldShake = !cancelled && !shookThisDrag
+      && ((travel >= FLING_MIN_TRAVEL && speed >= FLING_MIN_SPEED) || deliberateThrow);
+
     dragging = false;
+    const releasedId = pointerId;
     pointerId = null;
-    if (e && e.pointerId !== undefined) stage.releasePointerCapture?.(e.pointerId);
     stage.classList.remove('is-grabbed');
+    if (releasedId !== null && releasedId !== undefined) {
+      try {
+        if (!stage.hasPointerCapture || stage.hasPointerCapture(releasedId)) {
+          stage.releasePointerCapture?.(releasedId);
+        }
+      } catch { /* Capture may already have been lost. */ }
+    }
+    ball.drop?.(vx, vy);
+    if (shouldShake) fire(Math.min(1, 0.4 + Math.max(speed / 5, travel / 600)), 'pointer');
+  }
+
+  function onPointerUp(e) { endDrag(e); }
+  function onPointerCancel(e) { endDrag(e, true); }
+  function onPointerLeave(e) {
+    if (!stage.hasPointerCapture?.(pointerId)) endDrag(e, true);
   }
 
   function onWheel(e) {
@@ -238,9 +323,12 @@ export function createShaker({ stage, ball, onShake, onSource, isTyping, bindKey
   function attach() {
     stage.addEventListener('pointerdown', onPointerDown);
     stage.addEventListener('pointermove', onPointerMove);
-    stage.addEventListener('pointerup', endDrag);
-    stage.addEventListener('pointercancel', endDrag);
-    stage.addEventListener('pointerleave', endDrag);
+    stage.addEventListener('pointerup', onPointerUp);
+    stage.addEventListener('pointercancel', onPointerCancel);
+    stage.addEventListener('pointerleave', onPointerLeave);
+    stage.addEventListener('lostpointercapture', onPointerCancel);
+    addEventListener('pointerup', onPointerUp);
+    addEventListener('pointercancel', onPointerCancel);
     stage.addEventListener('wheel', onWheel, { passive: false });
     stage.addEventListener('dblclick', onDblClick);
     if (bindKeys) addEventListener('keydown', onKeyDown);
@@ -251,9 +339,13 @@ export function createShaker({ stage, ball, onShake, onSource, isTyping, bindKey
   function detach() {
     stage.removeEventListener('pointerdown', onPointerDown);
     stage.removeEventListener('pointermove', onPointerMove);
-    stage.removeEventListener('pointerup', endDrag);
-    stage.removeEventListener('pointercancel', endDrag);
-    stage.removeEventListener('pointerleave', endDrag);
+    stage.removeEventListener('pointerup', onPointerUp);
+    stage.removeEventListener('pointercancel', onPointerCancel);
+    stage.removeEventListener('pointerleave', onPointerLeave);
+    stage.removeEventListener('lostpointercapture', onPointerCancel);
+    removeEventListener('pointerup', onPointerUp);
+    removeEventListener('pointercancel', onPointerCancel);
+    if (dragging) endDrag(null, true);
     stage.removeEventListener('wheel', onWheel);
     stage.removeEventListener('dblclick', onDblClick);
     if (bindKeys) removeEventListener('keydown', onKeyDown);

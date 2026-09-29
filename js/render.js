@@ -155,15 +155,7 @@ export function renderSettings(capabilities) {
   hide('motionBtn', !capabilities.motion);
   hide('micBtn', !capabilities.mic);
   const note = $('inputNote');
-  if (note) {
-    const has = [];
-    if (capabilities.motion) has.push('shake the phone');
-    if (capabilities.gamepad) has.push('any gamepad button');
-    if (capabilities.mic) has.push('shout at it');
-    note.textContent = has.length
-      ? `This browser can also do it if you ${has.join(', ')}.`
-      : 'Drag it, or press Space.';
-  }
+  if (note) note.textContent = 'Grab and fling the ball to shake it. A hard throw cracks it.';
 }
 
 function toggle(id, on, onLabel, offLabel) {

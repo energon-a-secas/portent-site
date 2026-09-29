@@ -622,7 +622,8 @@ button:active,
   position: relative;
   width: 100%;
   flex: 1;
-  min-height: 300px;
+  min-height: 360px;
+  background: radial-gradient(ellipse 42% 43% at 50% 48%, rgba(57, 46, 100, 0.2), transparent 83%);
   touch-action: none;             /* the drag is the toy, not a page scroll */
   cursor: grab;
   user-select: none;
@@ -755,15 +756,17 @@ body[data-tone] .stage::before {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: min(62%, 300px);
+  width: min(70%, 320px);
   aspect-ratio: 1;
-  transform: translate(-50%, -50%) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transform: translate(calc(-50% + var(--drag-x, 0px)), calc(-50% + var(--drag-y, 0px))) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 600ms var(--ease-out);
   border-radius: 50%;
   background:
-    radial-gradient(circle at 32% 26%, rgba(255,255,255,0.5), transparent 34%),
-    radial-gradient(circle at 50% 50%, #14141a, #05050a 72%);
+    radial-gradient(circle at 32% 26%, rgba(255,255,255,0.36), transparent 34%),
+    radial-gradient(circle at 50% 50%, #252435, #080810 72%);
   box-shadow: inset -18px -22px 46px rgba(0,0,0,0.85), 0 18px 40px rgba(0,0,0,0.6);
 }
+.flat-ball.is-dragging { transition: none; }
 .flat-ball__eight {
   position: absolute;
   top: 9%;
@@ -779,18 +782,18 @@ body[data-tone] .stage::before {
 }
 .flat-ball__window {
   position: absolute;
-  bottom: 12%;
-  width: 40%;
+  bottom: 8%;
+  width: 49%;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
   padding: 6px;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 35%, #17347a, #08163a);
+  background: radial-gradient(circle at 50% 35%, #355db6, #122b66);
   border: 6px solid #08080c;
   color: #eef2ff;
-  font-size: clamp(0.6rem, 2.2vw, 0.8rem);
-  font-weight: 600;
+  font-size: clamp(0.7rem, 2.3vw, 0.95rem);
+  font-weight: 700;
   text-align: center;
   line-height: 1.15;
   overflow: hidden;
@@ -798,13 +801,29 @@ body[data-tone] .stage::before {
 .flat-ball[data-away="true"] .flat-ball__window,
 .flat-ball[data-phase="agitated"] .flat-ball__window { color: transparent; }
 .flat-ball[data-xray="true"] { opacity: 0.72; }
+.flat-ball__fracture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #c7d2ff;
+  stroke-width: 0.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px #8b5cf6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms var(--ease-out);
+}
+.stage.is-cracked .flat-ball__fracture { opacity: 0.9; }
 
 .stage.is-shaking .flat-ball { animation: flat-shake 0.42s var(--ease-out) 2; }
 @keyframes flat-shake {
-  0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
-  20%  { transform: translate(-56%, -52%) rotate(-7deg); }
-  45%  { transform: translate(-44%, -48%) rotate(8deg); }
-  70%  { transform: translate(-53%, -53%) rotate(-4deg); }
+  0%, 100% { transform: translate(calc(-50% + var(--drag-x, 0px)), calc(-50% + var(--drag-y, 0px))) rotate(0deg); }
+  20%  { transform: translate(calc(-56% + var(--drag-x, 0px)), calc(-52% + var(--drag-y, 0px))) rotate(-7deg); }
+  45%  { transform: translate(calc(-44% + var(--drag-x, 0px)), calc(-48% + var(--drag-y, 0px))) rotate(8deg); }
+  70%  { transform: translate(calc(-53% + var(--drag-x, 0px)), calc(-53% + var(--drag-y, 0px))) rotate(-4deg); }
 }
 
 /* ── The answers sheet ─────────────────────────────────────── */
@@ -903,11 +922,12 @@ html[data-chrome="off"] .play { padding-top: var(--space-6); }
  * flat ball, whose shake is a CSS animation. */
 @media (prefers-reduced-motion: reduce) {
   .stage.is-shaking .flat-ball { animation: none; }
+  .flat-ball, .flat-ball__fracture { transition: none; }
 }
 
 @media (max-width: 600px) {
   .play { padding: var(--space-3) var(--space-4) var(--space-4); gap: var(--space-2); }
-  .stage { min-height: 240px; }
+  .stage { min-height: 320px; }
   .readout { min-height: 3.6rem; }
   .readout__answer { font-size: var(--text-lg); }
   .deck-sheet { padding: var(--space-4); }

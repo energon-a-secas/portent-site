@@ -7,7 +7,7 @@ graph TD
         MIC["Microphone"]
     end
 
-    SHAKER["js/shake.js<br/>counts direction changes,<br/>so a straight swipe is not a shake"]
+    SHAKER["js/shake.js<br/>drag, fling and<br/>direction-change input"]
 
     POINTER --> SHAKER
     KEYS --> SHAKER
@@ -18,7 +18,7 @@ graph TD
     SHAKER -->|"shake(strength)"| BALL
 
     subgraph ball["The ball"]
-        BALL["js/ball3d.js<br/>quaternion physics<br/>idle to agitated to<br/>awaiting-flip to revealed"]
+        BALL["js/ball3d.js<br/>quaternion physics<br/>drag, settle and<br/>upright reveal"]
         ART["js/ballart.js<br/>meshes, materials,<br/>canvas textures"]
         FLAT["js/flatball.js<br/>the no-WebGL twin,<br/>same hooks"]
         BALL --> ART
